@@ -1,0 +1,338 @@
+/* Dashboard.css */
+
+.dashboard {
+  padding: 1.5rem;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+  background-color: #0f172a; /* slate-900 */
+  min-height: 100vh;
+  color: white;
+}
+
+/* Card styles */
+.cardiac-metrics-card {
+  background: linear-gradient(to bottom right, #7f1d1d, #b91c1c);
+  border-radius: 0.75rem;
+  overflow: hidden;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.oxygen-environment-card {
+  background: linear-gradient(to bottom right, #1e3a8a, #1d4ed8);
+  border-radius: 0.75rem;
+  overflow: hidden;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.trends-card {
+  background: linear-gradient(to bottom right, #581c87, #7e22ce);
+  border-radius: 0.75rem;
+  overflow: hidden;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(168, 85, 247, 0.3);
+}
+
+.alerts-card {
+  background: linear-gradient(to bottom right, #78350f, #b45309);
+  border-radius: 0.75rem;
+  overflow: hidden;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+/* Content areas */
+.cardiac-content,
+.oxygen-content,
+.trends-content,
+.alerts-content {
+  padding: 1.5rem;
+}
+
+/* Header styles */
+.header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.alerts-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.icon {
+  color: rgba(252, 231, 243, 0.7);
+}
+
+.title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* Gauge styles */
+.gauge-container {
+  display: flex;
+  justify-content: center;
+  margin: 1rem ;
+}
+
+.gauge {
+  position: relative;
+  width: 8rem;
+  height: 8rem;
+}
+
+.gauge-svg {
+  width: 100%;
+  height: 100%;
+}
+
+.gauge-bg {
+  stroke: #7f1d1d; /* red-900 */
+}
+
+.gauge-progress {
+  stroke: #f87171; /* red-400 */
+}
+
+.gauge-text {
+  fill: white;
+  /* margin-top: 1rem; */
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.gauge-unit {
+  fill: white;
+  font-size: 0.75rem;
+}
+
+/* Metrics grid */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.metric-box {
+  background-color: rgba(153, 27, 27, 0.5); /* red-800/50 */
+  padding: 1rem;
+  border-radius: 0.5rem;
+  text-align: center;
+}
+
+.metric-label {
+  font-size: 0.875rem;
+  color: rgba(254, 202, 202, 0.9); /* red-200 */
+}
+
+.metric-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: rgba(254, 242, 242, 0.9); /* red-50 */
+}
+
+.metric-unit {
+  font-size: 0.75rem;
+}
+
+/* Environment grid */
+.env-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.env-column {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.env-box {
+  background-color: rgba(30, 58, 138, 0.5); /* blue-800/50 */
+  padding: 1rem;
+  border-radius: 0.5rem;
+}
+
+.env-label {
+  font-size: 0.875rem;
+  color: rgba(191, 219, 254, 0.9); /* blue-200 */
+}
+
+.env-value {
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: rgba(239, 246, 255, 0.9); /* blue-50 */
+}
+
+.env-unit {
+  font-size: 0.875rem;
+}
+
+/* Chart container */
+.chart-container {
+  height: 16rem;
+  background-color: rgba(107, 33, 168, 0.3); /* purple-800/30 */
+  padding: 1rem;
+  border-radius: 0.5rem;
+}
+
+/* Alerts grid */
+.alerts-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+.alerts-container {
+  background-color: rgba(146, 64, 14, 0.3); /* amber-800/30 */
+  border-radius: 0.5rem;
+  padding: 1rem;
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.location-container {
+  background-color: rgba(146, 64, 14, 0.3); /* amber-800/30 */
+  padding: 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.section-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: rgba(254, 243, 199, 0.9); /* amber-100 */
+  margin-bottom: 0.75rem;
+}
+
+.alerts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.alert-item {
+  padding: 0.75rem;
+  background-color: rgba(180, 83, 9, 0.5); /* amber-700/50 */
+  border-radius: 0.5rem;
+  animation: pulse 2s infinite;
+  border: 1px solid rgba(217, 119, 6, 0.3);
+}
+
+.alert-text {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: rgba(254, 243, 199, 0.9); /* amber-100 */
+}
+
+.no-alerts {
+  text-align: center;
+  padding: 2rem 0;
+}
+
+.no-alerts-text {
+  color: rgba(253, 230, 138, 0.7); /* amber-200/70 */
+}
+
+.monitoring-text {
+  color: rgba(253, 230, 138, 0.5); /* amber-200/50 */
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+.location-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.location-item {
+  background-color: rgba(180, 83, 9, 0.3); /* amber-700/30 */
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+}
+
+.location-label {
+  font-size: 0.75rem;
+  color: rgba(253, 230, 138, 0.7); /* amber-200/70 */
+}
+
+.location-value {
+  font-size: 1.125rem;
+  font-weight: 500;
+  color: rgba(254, 243, 199, 0.9); /* amber-100 */
+}
+
+.timestamp {
+  margin-top: 1rem;
+  text-align: center;
+}
+
+.timestamp-text {
+  font-size: 0.75rem;
+  color: rgba(253, 230, 138, 0.7); /* amber-200/70 */
+}
+
+/* Clear button */
+.clear-button {
+  background-color: #d97706; /* amber-600 */
+  color: rgba(255, 251, 235, 0.9); /* amber-50 */
+  border: 1px solid rgba(251, 191, 36, 0.5);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.clear-button:hover {
+  background-color: #f59e0b; /* amber-500 */
+}
+
+/* Animation */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+/* Media queries */
+@media (min-width: 768px) {
+  .dashboard {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .trends-card {
+    grid-column: span 2;
+  }
+
+  .alerts-card {
+    grid-column: span 2;
+  }
+
+  .alerts-grid {
+    grid-template-columns: 2fr 1fr;
+  }
+}
+
+@media (min-width: 1024px) {
+  .dashboard {
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+  }
+
+  .trends-card {
+    grid-column: span 2;
+  }
+
+  .alerts-card {
+    grid-column: span 4;
+  }
+}
