@@ -430,7 +430,7 @@ const Dashboard = () => {
                 <text x="50" y="50" dy="0.35em" textAnchor="middle" className="gauge-text">
                   {getCurrentReading('heartRate')}
                 </text>
-                <text x="50" y="70" textAnchor="middle" className="gauge-unit">
+                <text x="50" y="80" textAnchor="middle" className="gauge-unit">
                   BPM
                 </text>
               </svg>
