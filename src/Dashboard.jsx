@@ -1,16 +1,18 @@
 import React, { useEffect, useState } from "react";
 import { Card, CardContent } from "./components/ui/Card";
 import { Button } from "./components/ui/Button";
-import { AlertTriangle, Droplet, HeartPulse, Waves } from "lucide-react";
+import { AlertTriangle, Droplet, HeartPulse, Waves, LogOut } from "lucide-react";
 import { Line } from "react-chartjs-2";
 import "chart.js/auto";
-import CustomGauge from "./components/Customgauge";
-import "./Dashboard.css"
+import { supabase, saveHealthData } from "./lib/supabase";
+import { useAuth } from "./context/AuthContext"
+import "./Dashboard.css";
 
 const Dashboard = () => {
   const [data, setData] = useState([]);
   const [alerts, setAlerts] = useState([]);
   const [location, setLocation] = useState({ lat: null, lon: null });
+  const { user, signOut } = useAuth();
 
   // Generate mock environmental data
   const generateEnvData = () => ({
@@ -55,10 +57,17 @@ const Dashboard = () => {
       
       // Check for alert conditions
       checkAlertConditions(newData);
+      
+      // Save data to Supabase if user is logged in
+      if (user) {
+        saveHealthData(user.id, newData).catch(error => {
+          console.error("Failed to save health data:", error);
+        });
+      }
     }, 3000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [user]);
 
   // Check for alert conditions
   const checkAlertConditions = (newData) => {
@@ -169,6 +178,23 @@ const Dashboard = () => {
 
   return (
     <div className="dashboard">
+      {/* Header with user info and signout */}
+      <div className="col-span-4 flex justify-between items-center mb-4 px-4 py-2 bg-slate-800/50 rounded-lg shadow-md border border-slate-700">
+        <div className="flex items-center">
+          <div className="text-xl font-semibold text-white">Health Monitoring Dashboard</div>
+          {user && (
+            <div className="ml-4 text-sm text-slate-300">{user.email}</div>
+          )}
+        </div>
+        <Button
+          className="bg-slate-700 hover:bg-slate-600 text-white flex items-center gap-2"
+          onClick={signOut}
+        >
+          <LogOut size={16} />
+          Sign Out
+        </Button>
+      </div>
+
       {/* Health Metrics Card */}
       <Card className="cardiac-metrics-card">
         <CardContent className="cardiac-content">
