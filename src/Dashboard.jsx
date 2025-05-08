@@ -37,9 +37,6 @@ const Dashboard = () => {
         heartRate: parseFloat(record.heart_rate).toFixed(1),
         spo2: parseFloat(record.spo2).toFixed(1),
         airQuality: parseFloat(record.air_quality).toFixed(1),
-        // Add default values for fields not in the database with one decimal place
-        temp: 36.5.toFixed(1),
-        humidity: 45.0.toFixed(1),
       }));
       
       // Sort data by timestamp
@@ -99,8 +96,6 @@ const Dashboard = () => {
             heartRate: parseFloat(payload.new.heart_rate).toFixed(1),
             spo2: parseFloat(payload.new.spo2).toFixed(1),
             airQuality: parseFloat(payload.new.air_quality).toFixed(1),
-            temp: 36.5.toFixed(1),
-            humidity: 45.0.toFixed(1),
           };
           
           // Add to existing data
@@ -120,21 +115,38 @@ const Dashboard = () => {
       const lastRecord = data.length > 0 ? data[data.length - 1] : {
         heartRate: 75,
         spo2: 96,
-        airQuality: 50,
-        temp: 36.5,
-        humidity: 45
+        airQuality: 50
       };
       
-      // Create a new record with slight variations for simulation
+      // Occasionally create alert-triggering values
+      const randomTrigger = Math.random();
+      let heartRateChange = Math.random() * 2 - 1;
+      let spo2Change = Math.random() * 0.6 - 0.3;
+      let airQualityChange = Math.random() * 4 - 2;
+      
+      // 5% chance to generate a heart rate alert
+      if (randomTrigger < 0.05) {
+        heartRateChange = Math.random() < 0.5 ? -20 : 30; // Either too low or too high
+      }
+      
+      // 3% chance to generate a SpO2 alert
+      if (randomTrigger >= 0.05 && randomTrigger < 0.08) {
+        spo2Change = -10; // Low oxygen
+      }
+      
+      // 7% chance to generate an air quality alert
+      if (randomTrigger >= 0.08 && randomTrigger < 0.15) {
+        airQualityChange = 60; // Bad air quality
+      }
+      
+      // Create a new record
       const simulatedRecord = {
         id: Date.now().toString(),
         time: new Date().toLocaleTimeString(),
         timestamp: new Date(),
-        heartRate: (parseFloat(lastRecord.heartRate) + (Math.random() * 2 - 1)).toFixed(1),
-        spo2: (parseFloat(lastRecord.spo2) + (Math.random() * 0.6 - 0.3)).toFixed(1),
-        airQuality: (parseFloat(lastRecord.airQuality) + (Math.random() * 4 - 2)).toFixed(1),
-        temp: (parseFloat(lastRecord.temp) + (Math.random() * 0.2 - 0.1)).toFixed(1),
-        humidity: (parseFloat(lastRecord.humidity) + (Math.random() * 0.4 - 0.2)).toFixed(1),
+        heartRate: (parseFloat(lastRecord.heartRate) + heartRateChange).toFixed(1),
+        spo2: (parseFloat(lastRecord.spo2) + spo2Change).toFixed(1),
+        airQuality: (parseFloat(lastRecord.airQuality) + airQualityChange).toFixed(1),
       };
       
       // Add simulated record to data
@@ -176,12 +188,17 @@ const Dashboard = () => {
       newAlerts.push(`🌫️ Severe Hypoxia (SpO2 ${newData.spo2}%) at ${newData.time}`);
     }
     
-    // AQI alerts - above 200
-    if (parseFloat(newData.airQuality) > 200) {
-      newAlerts.push(`☣️ Dangerous Air Quality (${newData.airQuality} AQI) at ${newData.time}`);
+    // AQI alerts - above 100 (lowered threshold for more alerts)
+    if (parseFloat(newData.airQuality) > 100) {
+      const category = getAQICategory(newData.airQuality);
+      newAlerts.push(`☣️ ${category} Air Quality (${newData.airQuality} AQI) at ${newData.time}`);
     }
     
-    if (newAlerts.length) setAlerts(prev => [...prev, ...newAlerts]);
+    if (newAlerts.length) {
+      // Log the alert for debugging
+      console.log("New alert triggered:", newAlerts);
+      setAlerts(prev => [...newAlerts, ...prev]); // Put new alerts at the top
+    }
   };
 
   // Get current readings
@@ -466,7 +483,7 @@ const Dashboard = () => {
                 <p className="env-note">
                   <span style={{ 
                     fontSize: '0.75rem', 
-                    color: parseFloat(getCurrentReading('airQuality')) > 200 ? '#fca5a5' : '#86efac' 
+                    color: parseFloat(getCurrentReading('airQuality')) > 100 ? '#fca5a5' : '#86efac' 
                   }}>
                     {getAQICategory(getCurrentReading('airQuality'))}
                   </span>
@@ -509,7 +526,7 @@ const Dashboard = () => {
             </div>
             <div className="legend-item">
               <span className="legend-color" style={{backgroundColor: '#10b981'}}></span>
-              <span className="legend-text">AQI (≤200 acceptable)</span>
+              <span className="legend-text">AQI (≤100 acceptable)</span>
             </div>
           </div>
           <div style={{ textAlign: 'center', marginTop: '8px' }}>
@@ -540,7 +557,7 @@ const Dashboard = () => {
             <div className="alerts-container">
               <h3 className="section-title">Recent Alerts</h3>
               <div className="alerts-list">
-                {alerts.slice(-5).map((alert, i) => (
+                {alerts.slice(0, 5).map((alert, i) => (
                   <div key={i} className="alert-item">
                     <p className="alert-text">{alert}</p>
                   </div>
