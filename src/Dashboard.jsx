@@ -29,17 +29,17 @@ const Dashboard = () => {
       
       if (error) throw error;
       
-      // Format the data for our dashboard
+      // Format the data for our dashboard with one decimal place
       const formattedData = healthData.map(record => ({
         id: record.id,
         time: new Date(record.timestamp).toLocaleTimeString(),
         timestamp: new Date(record.timestamp),
-        heartRate: record.heart_rate,
-        spo2: record.spo2,
-        airQuality: record.air_quality,
-        // Add default values for fields not in the database
-        temp: 36.5, // Default body temperature
-        humidity: 45, // Default humidity
+        heartRate: parseFloat(record.heart_rate).toFixed(1),
+        spo2: parseFloat(record.spo2).toFixed(1),
+        airQuality: parseFloat(record.air_quality).toFixed(1),
+        // Add default values for fields not in the database with one decimal place
+        temp: 36.5.toFixed(1),
+        humidity: 45.0.toFixed(1),
       }));
       
       // Sort data by timestamp
@@ -65,8 +65,8 @@ const Dashboard = () => {
       navigator.geolocation.getCurrentPosition(
         position => {
           setLocation({
-            lat: position.coords.latitude.toFixed(4),
-            lon: position.coords.longitude.toFixed(4),
+            lat: position.coords.latitude.toFixed(1),
+            lon: position.coords.longitude.toFixed(1),
           });
         },
         (error) => {
@@ -91,16 +91,16 @@ const Dashboard = () => {
           table: 'health_data' 
         }, 
         payload => {
-          // Format the new record
+          // Format the new record with one decimal place
           const newRecord = {
             id: payload.new.id,
             time: new Date(payload.new.timestamp).toLocaleTimeString(),
             timestamp: new Date(payload.new.timestamp),
-            heartRate: payload.new.heart_rate,
-            spo2: payload.new.spo2,
-            airQuality: payload.new.air_quality,
-            temp: 36.5, // Default body temperature
-            humidity: 45, // Default humidity
+            heartRate: parseFloat(payload.new.heart_rate).toFixed(1),
+            spo2: parseFloat(payload.new.spo2).toFixed(1),
+            airQuality: parseFloat(payload.new.air_quality).toFixed(1),
+            temp: 36.5.toFixed(1),
+            humidity: 45.0.toFixed(1),
           };
           
           // Add to existing data
@@ -115,7 +115,40 @@ const Dashboard = () => {
       )
       .subscribe();
 
-    // Set up polling for data updates (as a backup if real-time subscription fails)
+    // Create simulated data updates every second for live graphs and alerts
+    const simulateDataInterval = setInterval(() => {
+      const lastRecord = data.length > 0 ? data[data.length - 1] : {
+        heartRate: 75,
+        spo2: 96,
+        airQuality: 50,
+        temp: 36.5,
+        humidity: 45
+      };
+      
+      // Create a new record with slight variations for simulation
+      const simulatedRecord = {
+        id: Date.now().toString(),
+        time: new Date().toLocaleTimeString(),
+        timestamp: new Date(),
+        heartRate: (parseFloat(lastRecord.heartRate) + (Math.random() * 2 - 1)).toFixed(1),
+        spo2: (parseFloat(lastRecord.spo2) + (Math.random() * 0.6 - 0.3)).toFixed(1),
+        airQuality: (parseFloat(lastRecord.airQuality) + (Math.random() * 4 - 2)).toFixed(1),
+        temp: (parseFloat(lastRecord.temp) + (Math.random() * 0.2 - 0.1)).toFixed(1),
+        humidity: (parseFloat(lastRecord.humidity) + (Math.random() * 0.4 - 0.2)).toFixed(1),
+      };
+      
+      // Add simulated record to data
+      setData(prev => {
+        const newData = [...prev, simulatedRecord].slice(-60); // Keep last 60 records (1 minute of data)
+        return newData;
+      });
+      
+      // Check alerts for simulated data
+      checkAlertConditions(simulatedRecord);
+      
+    }, 1000); // Update every second
+    
+    // Set up polling for real data updates (as a backup if real-time subscription fails)
     const interval = setInterval(() => {
       fetchHealthData();
     }, 30000); // Fetch every 30 seconds
@@ -123,27 +156,28 @@ const Dashboard = () => {
     return () => {
       subscription.unsubscribe();
       clearInterval(interval);
+      clearInterval(simulateDataInterval);
     };
-  }, [user]);
+  }, []);
 
   // Check for alert conditions
   const checkAlertConditions = (newData) => {
     const newAlerts = [];
     
     // Heart rate alerts - outside 60-100 BPM range
-    if (newData.heartRate < 60) {
+    if (parseFloat(newData.heartRate) < 60) {
       newAlerts.push(`❤️ Bradycardia (${newData.heartRate} BPM) at ${newData.time}`);
-    } else if (newData.heartRate > 100) {
+    } else if (parseFloat(newData.heartRate) > 100) {
       newAlerts.push(`❤️ Tachycardia (${newData.heartRate} BPM) at ${newData.time}`);
     }
     
     // SpO2 alerts - below 90%
-    if (newData.spo2 < 90) {
+    if (parseFloat(newData.spo2) < 90) {
       newAlerts.push(`🌫️ Severe Hypoxia (SpO2 ${newData.spo2}%) at ${newData.time}`);
     }
     
     // AQI alerts - above 200
-    if (newData.airQuality > 200) {
+    if (parseFloat(newData.airQuality) > 200) {
       newAlerts.push(`☣️ Dangerous Air Quality (${newData.airQuality} AQI) at ${newData.time}`);
     }
     
@@ -161,37 +195,37 @@ const Dashboard = () => {
     datasets: [
       {
         label: 'Heart Rate',
-        data: data.map(d => d.heartRate),
+        data: data.map(d => parseFloat(d.heartRate)),
         borderColor: '#ef4444',
         backgroundColor: 'rgba(239, 68, 68, 0.1)',
         borderWidth: 3,
         tension: 0.4,
         fill: true,
-        pointRadius: 3,
+        pointRadius: 2,
         pointBackgroundColor: '#ef4444',
         yAxisID: 'y',
       },
       {
         label: 'SpO2',
-        data: data.map(d => d.spo2),
+        data: data.map(d => parseFloat(d.spo2)),
         borderColor: '#60a5fa',
         backgroundColor: 'rgba(96, 165, 250, 0.1)',
         borderWidth: 3,
         tension: 0.4,
         fill: true,
-        pointRadius: 3,
+        pointRadius: 2,
         pointBackgroundColor: '#60a5fa',
         yAxisID: 'y',
       },
       {
         label: 'Air Quality',
-        data: data.map(d => d.airQuality),
+        data: data.map(d => parseFloat(d.airQuality)),
         borderColor: '#10b981',
         backgroundColor: 'rgba(16, 185, 129, 0.1)',
         borderWidth: 3,
         tension: 0.4,
         fill: true,
-        pointRadius: 3,
+        pointRadius: 2,
         pointBackgroundColor: '#10b981',
         yAxisID: 'y1',
       }
@@ -203,7 +237,7 @@ const Dashboard = () => {
     maintainAspectRatio: false,
     animations: {
       tension: {
-        duration: 1000,
+        duration: 500,
         easing: 'linear',
       }
     },
@@ -236,7 +270,10 @@ const Dashboard = () => {
           color: '#94a3b8',
           font: {
             size: 12,
-          }
+          },
+          maxRotation: 45,
+          minRotation: 45,
+          maxTicksLimit: 10, // Limit number of x-axis labels to prevent crowding
         },
         grid: { 
           color: 'rgba(148, 163, 184, 0.1)',
@@ -259,6 +296,9 @@ const Dashboard = () => {
           color: '#94a3b8',
           font: {
             size: 12,
+          },
+          callback: function(value) {
+            return value.toFixed(1); // Display with one decimal
           }
         },
         grid: { 
@@ -282,6 +322,9 @@ const Dashboard = () => {
           color: '#10b981',
           font: {
             size: 12,
+          },
+          callback: function(value) {
+            return value.toFixed(1); // Display with one decimal
           }
         },
         grid: {
@@ -293,6 +336,7 @@ const Dashboard = () => {
 
   // AQI interpretation function
   const getAQICategory = (aqi) => {
+    aqi = parseFloat(aqi);
     if (aqi <= 50) return "Good";
     if (aqi <= 100) return "Moderate";
     if (aqi <= 150) return "Unhealthy for Sensitive Groups";
@@ -362,14 +406,14 @@ const Dashboard = () => {
                   transform="rotate(-90 50 50)"
                   style={{
                     strokeDasharray: `${2 * Math.PI * 45}`,
-                    strokeDashoffset: `${2 * Math.PI * 45 * (1 - ((getCurrentReading('heartRate') - 60) / 60))}`,
+                    strokeDashoffset: `${2 * Math.PI * 45 * (1 - ((parseFloat(getCurrentReading('heartRate')) - 60) / 60))}`,
                     transition: 'stroke-dashoffset 0.5s ease-in-out'
                   }}
                 />
                 <text x="50" y="50" dy="0.35em" textAnchor="middle" className="gauge-text">
                   {getCurrentReading('heartRate')}
                 </text>
-                <text x="50" y="75" textAnchor="middle" className="gauge-unit">
+                <text x="50" y="70" textAnchor="middle" className="gauge-unit">
                   BPM
                 </text>
               </svg>
@@ -383,7 +427,7 @@ const Dashboard = () => {
                 {getCurrentReading('heartRate')} <span className="metric-unit">BPM</span>
               </p>
               <p className="metric-note">
-                {getCurrentReading('heartRate') < 60 || getCurrentReading('heartRate') > 100 ? 
+                {parseFloat(getCurrentReading('heartRate')) < 60 || parseFloat(getCurrentReading('heartRate')) > 100 ? 
                   <span style={{ color: '#fca5a5', fontSize: '0.75rem' }}>Outside normal range (60-100)</span> : 
                   <span style={{ color: '#86efac', fontSize: '0.75rem' }}>Normal range</span>}
               </p>
@@ -397,7 +441,7 @@ const Dashboard = () => {
         <CardContent className="oxygen-content">
           <div className="header">
             <Droplet className="icon" size={28} />
-            <h2 className="title">Oxygen & Environment</h2>
+            <h2 className="title">SpO2 and Air Quality</h2>
           </div>
           <div className="env-grid">
             <div className="env-column">
@@ -407,15 +451,9 @@ const Dashboard = () => {
                   {getCurrentReading('spo2')}%
                 </p>
                 <p className="env-note">
-                  {getCurrentReading('spo2') < 90 ? 
+                  {parseFloat(getCurrentReading('spo2')) < 90 ? 
                     <span style={{ color: '#fca5a5', fontSize: '0.75rem' }}>Critical: Below 90%</span> : 
                     <span style={{ color: '#86efac', fontSize: '0.75rem' }}>Normal</span>}
-                </p>
-              </div>
-              <div className="env-box">
-                <p className="env-label">Humidity</p>
-                <p className="env-value">
-                  {getCurrentReading('humidity')}%
                 </p>
               </div>
             </div>
@@ -428,16 +466,10 @@ const Dashboard = () => {
                 <p className="env-note">
                   <span style={{ 
                     fontSize: '0.75rem', 
-                    color: getCurrentReading('airQuality') > 200 ? '#fca5a5' : '#86efac' 
+                    color: parseFloat(getCurrentReading('airQuality')) > 200 ? '#fca5a5' : '#86efac' 
                   }}>
                     {getAQICategory(getCurrentReading('airQuality'))}
                   </span>
-                </p>
-              </div>
-              <div className="env-box">
-                <p className="env-label">Temperature</p>
-                <p className="env-value">
-                  {getCurrentReading('temp')}°C
                 </p>
               </div>
             </div>
@@ -508,7 +540,7 @@ const Dashboard = () => {
             <div className="alerts-container">
               <h3 className="section-title">Recent Alerts</h3>
               <div className="alerts-list">
-                {alerts.slice(-3).map((alert, i) => (
+                {alerts.slice(-5).map((alert, i) => (
                   <div key={i} className="alert-item">
                     <p className="alert-text">{alert}</p>
                   </div>
