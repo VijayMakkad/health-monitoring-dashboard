@@ -4,7 +4,7 @@ import { Button } from "./components/ui/Button";
 import { AlertTriangle, Droplet, HeartPulse, Waves, LogOut } from "lucide-react";
 import { Line } from "react-chartjs-2";
 import "chart.js/auto";
-import { supabase, saveHealthData } from "./lib/supabase";
+import { supabase } from "./lib/supabase";
 import { useAuth } from "./context/AuthContext"
 import "./Dashboard.css";
 
@@ -12,17 +12,52 @@ const Dashboard = () => {
   const [data, setData] = useState([]);
   const [alerts, setAlerts] = useState([]);
   const [location, setLocation] = useState({ lat: null, lon: null });
+  const [loading, setLoading] = useState(true);
   const { user, signOut } = useAuth();
 
-  // Generate mock environmental data
-  const generateEnvData = () => ({
-    time: new Date().toLocaleTimeString(),
-    heartRate: Math.floor(Math.random() * (120 - 60) + 60),
-    spo2: Math.floor(Math.random() * (100 - 90) + 90),
-    airQuality: Math.floor(Math.random() * (500 - 50) + 50),
-    temp: Math.floor(Math.random() * (40 - 34) + 34),
-    humidity: Math.floor(Math.random() * (100 - 30) + 30),
-  });
+  // Fetch health data from database
+  const fetchHealthData = async () => {
+    try {
+      setLoading(true);
+      
+      // Fetch recent health data records - adjust the limit as needed
+      const { data: healthData, error } = await supabase
+        .from('health_data')
+        .select('*')
+        .order('timestamp', { ascending: false })
+        .limit(20);
+      
+      if (error) throw error;
+      
+      // Format the data for our dashboard
+      const formattedData = healthData.map(record => ({
+        id: record.id,
+        time: new Date(record.timestamp).toLocaleTimeString(),
+        timestamp: new Date(record.timestamp),
+        heartRate: record.heart_rate,
+        spo2: record.spo2,
+        airQuality: record.air_quality,
+        // Add default values for fields not in the database
+        temp: 36.5, // Default body temperature
+        humidity: 45, // Default humidity
+      }));
+      
+      // Sort data by timestamp
+      formattedData.sort((a, b) => a.timestamp - b.timestamp);
+      
+      setData(formattedData);
+      
+      // Check for alert conditions on the latest data
+      if (formattedData.length > 0) {
+        checkAlertConditions(formattedData[formattedData.length - 1]);
+      }
+      
+    } catch (error) {
+      console.error("Error fetching health data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     // Get geolocation
@@ -43,29 +78,52 @@ const Dashboard = () => {
       setLocation({ lat: "Not available", lon: "Not available" });
     }
 
-    // Initialize with some data
-    const initialData = [];
-    for (let i = 0; i < 5; i++) {
-      initialData.push(generateEnvData());
-    }
-    setData(initialData);
+    // Initial data fetch
+    fetchHealthData();
 
+    // Set up real-time subscription to the health_data table
+    const subscription = supabase
+      .channel('health_data_changes')
+      .on('postgres_changes', 
+        { 
+          event: 'INSERT', 
+          schema: 'public', 
+          table: 'health_data' 
+        }, 
+        payload => {
+          // Format the new record
+          const newRecord = {
+            id: payload.new.id,
+            time: new Date(payload.new.timestamp).toLocaleTimeString(),
+            timestamp: new Date(payload.new.timestamp),
+            heartRate: payload.new.heart_rate,
+            spo2: payload.new.spo2,
+            airQuality: payload.new.air_quality,
+            temp: 36.5, // Default body temperature
+            humidity: 45, // Default humidity
+          };
+          
+          // Add to existing data
+          setData(prev => {
+            const newData = [...prev, newRecord].slice(-20); // Keep last 20 records
+            return newData;
+          });
+          
+          // Check for alert conditions
+          checkAlertConditions(newRecord);
+        }
+      )
+      .subscribe();
+
+    // Set up polling for data updates (as a backup if real-time subscription fails)
     const interval = setInterval(() => {
-      const newData = generateEnvData();
-      setData(prev => [...prev.slice(-20), newData]);
-      
-      // Check for alert conditions
-      checkAlertConditions(newData);
-      
-      // Save data to Supabase if user is logged in
-      if (user) {
-        saveHealthData(user.id, newData).catch(error => {
-          console.error("Failed to save health data:", error);
-        });
-      }
-    }, 3000);
+      fetchHealthData();
+    }, 30000); // Fetch every 30 seconds
 
-    return () => clearInterval(interval);
+    return () => {
+      subscription.unsubscribe();
+      clearInterval(interval);
+    };
   }, [user]);
 
   // Check for alert conditions
@@ -87,11 +145,6 @@ const Dashboard = () => {
     // AQI alerts - above 200
     if (newData.airQuality > 200) {
       newAlerts.push(`☣️ Dangerous Air Quality (${newData.airQuality} AQI) at ${newData.time}`);
-    }
-    
-    // Temperature alerts (keeping the original)
-    if (newData.temp > 38) {
-      newAlerts.push(`🔥 Elevated Temperature (${newData.temp}°C) at ${newData.time}`);
     }
     
     if (newAlerts.length) setAlerts(prev => [...prev, ...newAlerts]);
@@ -267,6 +320,18 @@ const Dashboard = () => {
         </Button>
       </div>
 
+      {/* Loading indicator */}
+      {loading && (
+        <div style={{ 
+          gridColumn: "1 / -1", 
+          display: "flex", 
+          justifyContent: "center", 
+          padding: "2rem" 
+        }}>
+          <div className="loading-spinner"></div>
+        </div>
+      )}
+
       {/* Health Metrics Card */}
       <Card className="cardiac-metrics-card">
         <CardContent className="cardiac-content">
@@ -388,7 +453,18 @@ const Dashboard = () => {
             <h2 className="title">Vital Signs Trends</h2>
           </div>
           <div className="chart-container">
-            <Line data={chartData} options={chartOptions} />
+            {data.length > 0 ? (
+              <Line data={chartData} options={chartOptions} />
+            ) : (
+              <div style={{ 
+                display: "flex", 
+                justifyContent: "center", 
+                alignItems: "center", 
+                height: "100%" 
+              }}>
+                <p>No data available</p>
+              </div>
+            )}
           </div>
           <div className="chart-legend-custom">
             <div className="legend-item">
@@ -403,6 +479,11 @@ const Dashboard = () => {
               <span className="legend-color" style={{backgroundColor: '#10b981'}}></span>
               <span className="legend-text">AQI (≤200 acceptable)</span>
             </div>
+          </div>
+          <div style={{ textAlign: 'center', marginTop: '8px' }}>
+            <Button onClick={fetchHealthData}>
+              Refresh Data
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -458,7 +539,7 @@ const Dashboard = () => {
                 </div>
                 <div className="timestamp">
                   <p className="timestamp-text">
-                    Last update: {new Date().toLocaleTimeString()}
+                    Last update: {data.length > 0 ? data[data.length-1].time : 'No data'}
                   </p>
                 </div>
               </div>
