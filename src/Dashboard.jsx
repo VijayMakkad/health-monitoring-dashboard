@@ -22,7 +22,6 @@ const Dashboard = () => {
     airQuality: Math.floor(Math.random() * (500 - 50) + 50),
     temp: Math.floor(Math.random() * (40 - 34) + 34),
     humidity: Math.floor(Math.random() * (100 - 30) + 30),
-    respiratoryRate: Math.floor(Math.random() * (40 - 12) + 12),
   });
 
   useEffect(() => {
@@ -72,10 +71,28 @@ const Dashboard = () => {
   // Check for alert conditions
   const checkAlertConditions = (newData) => {
     const newAlerts = [];
-    if (newData.heartRate > 110) newAlerts.push(`🚨 Tachycardia (${newData.heartRate} BPM) at ${newData.time}`);
-    if (newData.spo2 < 92) newAlerts.push(`🌫️ Hypoxia (SpO2 ${newData.spo2}%) at ${newData.time}`);
-    if (newData.airQuality > 300) newAlerts.push(`☣️ Poor Air Quality (${newData.airQuality} AQI) at ${newData.time}`);
-    if (newData.temp > 38) newAlerts.push(`🔥 Elevated Temperature (${newData.temp}°C) at ${newData.time}`);
+    
+    // Heart rate alerts - outside 60-100 BPM range
+    if (newData.heartRate < 60) {
+      newAlerts.push(`❤️ Bradycardia (${newData.heartRate} BPM) at ${newData.time}`);
+    } else if (newData.heartRate > 100) {
+      newAlerts.push(`❤️ Tachycardia (${newData.heartRate} BPM) at ${newData.time}`);
+    }
+    
+    // SpO2 alerts - below 90%
+    if (newData.spo2 < 90) {
+      newAlerts.push(`🌫️ Severe Hypoxia (SpO2 ${newData.spo2}%) at ${newData.time}`);
+    }
+    
+    // AQI alerts - above 200
+    if (newData.airQuality > 200) {
+      newAlerts.push(`☣️ Dangerous Air Quality (${newData.airQuality} AQI) at ${newData.time}`);
+    }
+    
+    // Temperature alerts (keeping the original)
+    if (newData.temp > 38) {
+      newAlerts.push(`🔥 Elevated Temperature (${newData.temp}°C) at ${newData.time}`);
+    }
     
     if (newAlerts.length) setAlerts(prev => [...prev, ...newAlerts]);
   };
@@ -99,6 +116,7 @@ const Dashboard = () => {
         fill: true,
         pointRadius: 3,
         pointBackgroundColor: '#ef4444',
+        yAxisID: 'y',
       },
       {
         label: 'SpO2',
@@ -110,6 +128,19 @@ const Dashboard = () => {
         fill: true,
         pointRadius: 3,
         pointBackgroundColor: '#60a5fa',
+        yAxisID: 'y',
+      },
+      {
+        label: 'Air Quality',
+        data: data.map(d => d.airQuality),
+        borderColor: '#10b981',
+        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+        borderWidth: 3,
+        tension: 0.4,
+        fill: true,
+        pointRadius: 3,
+        pointBackgroundColor: '#10b981',
+        yAxisID: 'y1',
       }
     ]
   };
@@ -160,8 +191,17 @@ const Dashboard = () => {
         }
       },
       y: { 
-        min: 60,
+        position: 'left',
+        min: 50,
         max: 120,
+        title: {
+          display: true,
+          text: 'Heart Rate / SpO2',
+          color: '#94a3b8',
+          font: {
+            size: 12,
+          }
+        },
         ticks: { 
           color: '#94a3b8',
           font: {
@@ -172,22 +212,54 @@ const Dashboard = () => {
           color: 'rgba(148, 163, 184, 0.1)',
           drawBorder: false,
         }
+      },
+      y1: {
+        position: 'right',
+        min: 0,
+        max: 500,
+        title: {
+          display: true,
+          text: 'Air Quality Index',
+          color: '#10b981',
+          font: {
+            size: 12,
+          }
+        },
+        ticks: {
+          color: '#10b981',
+          font: {
+            size: 12,
+          }
+        },
+        grid: {
+          display: false,
+        }
       }
     }
+  };
+
+  // AQI interpretation function
+  const getAQICategory = (aqi) => {
+    if (aqi <= 50) return "Good";
+    if (aqi <= 100) return "Moderate";
+    if (aqi <= 150) return "Unhealthy for Sensitive Groups";
+    if (aqi <= 200) return "Unhealthy";
+    if (aqi <= 300) return "Very Unhealthy";
+    return "Hazardous";
   };
 
   return (
     <div className="dashboard">
       {/* Header with user info and signout */}
-      <div className="col-span-4 flex justify-between items-center mb-4 px-4 py-2 bg-slate-800/50 rounded-lg shadow-md border border-slate-700">
-        <div className="flex items-center">
-          <div className="text-xl font-semibold text-white">Health Monitoring Dashboard</div>
+      <div className="dashboard-header">
+        <div className="user-info">
+          <div className="dashboard-title">Health Monitoring Dashboard</div>
           {user && (
-            <div className="ml-4 text-sm text-slate-300">{user.email}</div>
+            <div className="user-email">{user.email}</div>
           )}
         </div>
         <Button
-          className="bg-slate-700 hover:bg-slate-600 text-white flex items-center gap-2"
+          className="sign-out-button"
           onClick={signOut}
         >
           <LogOut size={16} />
@@ -232,7 +304,7 @@ const Dashboard = () => {
                 <text x="50" y="50" dy="0.35em" textAnchor="middle" className="gauge-text">
                   {getCurrentReading('heartRate')}
                 </text>
-                <text x="50" y="65" textAnchor="middle" className="gauge-unit">
+                <text x="50" y="75" textAnchor="middle" className="gauge-unit">
                   BPM
                 </text>
               </svg>
@@ -245,11 +317,10 @@ const Dashboard = () => {
               <p className="metric-value">
                 {getCurrentReading('heartRate')} <span className="metric-unit">BPM</span>
               </p>
-            </div>
-            <div className="metric-box">
-              <p className="metric-label">Resp. Rate</p>
-              <p className="metric-value">
-                {getCurrentReading('respiratoryRate')} <span className="metric-unit">BPM</span>
+              <p className="metric-note">
+                {getCurrentReading('heartRate') < 60 || getCurrentReading('heartRate') > 100 ? 
+                  <span style={{ color: '#fca5a5', fontSize: '0.75rem' }}>Outside normal range (60-100)</span> : 
+                  <span style={{ color: '#86efac', fontSize: '0.75rem' }}>Normal range</span>}
               </p>
             </div>
           </div>
@@ -270,6 +341,11 @@ const Dashboard = () => {
                 <p className="env-value">
                   {getCurrentReading('spo2')}%
                 </p>
+                <p className="env-note">
+                  {getCurrentReading('spo2') < 90 ? 
+                    <span style={{ color: '#fca5a5', fontSize: '0.75rem' }}>Critical: Below 90%</span> : 
+                    <span style={{ color: '#86efac', fontSize: '0.75rem' }}>Normal</span>}
+                </p>
               </div>
               <div className="env-box">
                 <p className="env-label">Humidity</p>
@@ -283,6 +359,14 @@ const Dashboard = () => {
                 <p className="env-label">Air Quality</p>
                 <p className="env-value">
                   {getCurrentReading('airQuality')} <span className="env-unit">AQI</span>
+                </p>
+                <p className="env-note">
+                  <span style={{ 
+                    fontSize: '0.75rem', 
+                    color: getCurrentReading('airQuality') > 200 ? '#fca5a5' : '#86efac' 
+                  }}>
+                    {getAQICategory(getCurrentReading('airQuality'))}
+                  </span>
                 </p>
               </div>
               <div className="env-box">
@@ -305,6 +389,20 @@ const Dashboard = () => {
           </div>
           <div className="chart-container">
             <Line data={chartData} options={chartOptions} />
+          </div>
+          <div className="chart-legend-custom">
+            <div className="legend-item">
+              <span className="legend-color" style={{backgroundColor: '#ef4444'}}></span>
+              <span className="legend-text">Heart Rate (60-100 normal)</span>
+            </div>
+            <div className="legend-item">
+              <span className="legend-color" style={{backgroundColor: '#60a5fa'}}></span>
+              <span className="legend-text">SpO2 (≥90% normal)</span>
+            </div>
+            <div className="legend-item">
+              <span className="legend-color" style={{backgroundColor: '#10b981'}}></span>
+              <span className="legend-text">AQI (≤200 acceptable)</span>
+            </div>
           </div>
         </CardContent>
       </Card>
